@@ -23,7 +23,7 @@ ulogging.basicConfig(level=10)
 ulogging.info('root logger info: {0}'.format(a))
 ulogging.debug('root logger debugging')
 
-logger_timed = ulogging.getLogger(__name__, 'log.py', 'wb', 2000)  # w to over-write, a to append, time in ms to keep file open
+logger_timed = ulogging.getLogger(__name__, 'log.py', 'w', 2000)  # w to over-write, a to append, time in ms to keep file open
 logger_timed.setLevel(10)
 logger_timed.info('logger info: {0}'.format(a))
 logger_timed.debug('logger debug')
