@@ -63,8 +63,6 @@ def set_4_pins(pins, value):
 
 @timed_function
 def get_4_pins_list(pins, outgoing):
-    #for i, pin in enumerate(pins):
-    #    outgoing[i] = pin.value()
     outgoing[0] = pins[0].value()
     outgoing[1] = pins[1].value()
     outgoing[2] = pins[2].value()
@@ -90,6 +88,14 @@ def getADC(pin):
     return pin.read()
 
 @timed_function
+def getADC_4pins(pins, outgoing):
+    outgoing[0] = pins[0].read()
+    outgoing[1] = pins[1].read()
+    outgoing[2] = pins[2].read()
+    outgoing[3] = pins[3].read()
+    return outgoing
+
+@timed_function
 def setPWM(pin):
     pin.duty(75)  
 
@@ -107,7 +113,7 @@ for i, pin in enumerate(pinlist):
 
 set_4_pins(io_pin, 0)
 
-pin = 34
+pin = 32
 adc = ADC(Pin(pin))
 adc.atten(ADC.ATTN_11DB)
 
@@ -127,10 +133,20 @@ ulogging.debug(data)
 data = get_4_pins_list_loop(io_pin, outgoing)
 ulogging.debug(data)
 
+adcpins = [32, 33, 34, 35]
+adc_pin = [0]*len(adcpins)
+for i, pin in enumerate(adcpins):
+    adc_pin[i] = ADC(Pin(pin))
+    adc_pin[i].atten(ADC.ATTN_11DB)
+adcdata = getADC_4pins(adc_pin, outgoing)
+ulogging.debug(adcdata)
+
 outgoing = {}
 data = get_4_pins_dict(io_pin, outgoing)
 ulogging.debug(data)
 
 adcvalue = getADC(adc)
+
+
 
 setPWM(pwm)
