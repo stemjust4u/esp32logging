@@ -1,4 +1,5 @@
-import sys
+import sys, uos
+from machine import Timer
 
 CRITICAL = 50
 ERROR    = 40
@@ -21,9 +22,15 @@ class Logger:
 
     level = NOTSET
 
-    def __init__(self, name):
+    def __init__(self, name, logfile):
         self.name = name
-
+        self.fileopen = False
+        if logfile is not None:
+            timer = Timer(0)
+            timer.init(period=2000, mode=Timer.ONE_SHOT, callback=self._debug_closef_exit)
+            mode = "wb" if logfile in uos.listdir() else "r+" # Create data file and write out header #
+            self.f = open(logfile, "wb")
+            self.fileopen = True
     def _level_str(self, level):
         l = _level_dict.get(level)
         if l is not None:
@@ -38,11 +45,18 @@ class Logger:
 
     def log(self, level, msg, *args):
         if level >= (self.level or _level):
-            _stream.write("%s:%s:" % (self._level_str(level), self.name))
-            if not args:
-                print(msg, file=_stream)
+            if self.fileopen:
+                _stream.write("%s:%s:" % (self._level_str(level), self.name))
+                if not args:
+                    self.f.write(msg)
+                else:
+                    self.f.write(msg % args, file=_stream)
             else:
-                print(msg % args, file=_stream)
+                _stream.write("%s:%s:" % (self._level_str(level), self.name))
+                if not args:
+                    print(msg, file=_stream)
+                else:
+                    print(msg % args, file=_stream)
 
     def debug(self, msg, *args):
         self.log(DEBUG, msg, *args)
@@ -66,14 +80,17 @@ class Logger:
     def exception(self, msg, *args):
         self.exc(sys.exc_info()[1], msg, *args)
 
+    def _debug_closef_exit(self, timer):
+        self.f.close()
+
 
 _level = INFO
 _loggers = {}
 
-def getLogger(name):
+def getLogger(name, file=None):
     if name in _loggers:
         return _loggers[name]
-    l = Logger(name)
+    l = Logger(name, file)
     _loggers[name] = l
     return l
 

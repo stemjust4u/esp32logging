@@ -17,13 +17,13 @@ DEBUG    = 10
 NOTSET   = 0
 '''
 a = "test"
-
+logfile='esp32.log'
 ulogging.basicConfig(level=10)
 
 ulogging.info('root logger info: {0}'.format(a))
 ulogging.debug('root logger debugging')
 
-logger_timed = ulogging.getLogger(__name__)
+logger_timed = ulogging.getLogger(__name__, 'test.log')
 logger_timed.setLevel(10)
 logger_timed.info('logger info: {0}'.format(a))
 logger_timed.debug('logger debug')
