@@ -1,0 +1,10 @@
+f = open("log.py", "r")
+f.read()
+f.readline().rstrip("\n")
+f.close()
+
+dir(uos)
+dir(f)
+dir(str)
+dir(list)
+dir(dict)

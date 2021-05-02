@@ -23,7 +23,7 @@ ulogging.basicConfig(level=10)
 ulogging.info('root logger info: {0}'.format(a))
 ulogging.debug('root logger debugging')
 
-logger_timed = ulogging.getLogger(__name__, 'test.log')
+logger_timed = ulogging.getLogger(__name__, 'log.py', 'wb', 2000)  # w to over-write, a to append, time in ms to keep file open
 logger_timed.setLevel(10)
 logger_timed.info('logger info: {0}'.format(a))
 logger_timed.debug('logger debug')
@@ -34,7 +34,7 @@ def timed_function(f, *args, **kwargs):
         t = utime.ticks_us()
         result = f(*args, **kwargs)
         delta = utime.ticks_diff(utime.ticks_us(), t)
-        logger_timed.debug('Function {} time = {:6.3f}ms'.format(myname, delta/1000))
+        logger_timed.debug('Function,{},time,{:6.3f},ms'.format(myname, delta/1000))
         return result
     return new_func
 

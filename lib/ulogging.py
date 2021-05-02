@@ -22,14 +22,13 @@ class Logger:
 
     level = NOTSET
 
-    def __init__(self, name, logfile):
+    def __init__(self, name, logfile, mode, filetime):
         self.name = name
         self.fileopen = False
         if logfile is not None:
             timer = Timer(0)
-            timer.init(period=2000, mode=Timer.ONE_SHOT, callback=self._debug_closef_exit)
-            mode = "wb" if logfile in uos.listdir() else "r+" # Create data file and write out header #
-            self.f = open(logfile, "wb")
+            timer.init(period=filetime, mode=Timer.ONE_SHOT, callback=self._debug_closef_exit)
+            self.f = open(logfile, mode)
             self.fileopen = True
     def _level_str(self, level):
         l = _level_dict.get(level)
@@ -48,7 +47,7 @@ class Logger:
             if self.fileopen:
                 _stream.write("%s:%s:" % (self._level_str(level), self.name))
                 if not args:
-                    self.f.write(msg)
+                    self.f.write("{0}\n".format(msg))
                 else:
                     self.f.write(msg % args, file=_stream)
             else:
@@ -87,10 +86,10 @@ class Logger:
 _level = INFO
 _loggers = {}
 
-def getLogger(name, file=None):
+def getLogger(name, file=None, mode='bw', filetime=2000):
     if name in _loggers:
         return _loggers[name]
-    l = Logger(name, file)
+    l = Logger(name, file, mode, filetime)
     _loggers[name] = l
     return l
 
