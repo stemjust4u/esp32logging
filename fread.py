@@ -30,11 +30,9 @@ z = ujson.load(f)
 print(z)
 ''' To use pickle just search/replace ujson with pickle
 
-JSON supports a more limited range of Python data types whereas pickle 
-supports all native data types. JSON has the benefit of being a standard, 
-so JSON files may easily be accessed by other languages. Note that arrays 
-are not a native data type so need to be converted to tuples when using either 
-module as in the sample above.
+JSON (universal format that works with other languages like js) supports most Python data types
+pickle (python specific) supports all python types
+Have to convert arrays to tuple since it is not a native data type
 '''
 dir(uos)
 dir(f)
