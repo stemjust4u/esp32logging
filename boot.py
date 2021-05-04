@@ -8,10 +8,10 @@ machine.freq(240000000)
 cpuf = machine.freq()
 
 logfiles = []   # Keep track of log files to monitor size and close them if too big
-MAIN_FILE_LOGGING = True  # Enable if wanting all modules to write to a single log file. Will use safer 'with' (open/close).
+MAIN_FILE_LOGGING = False  # Enable if wanting all modules to write to a single log file. Will use safer 'with' (open/close).
 MAIN_FILE_NAME = "log_total.log"    # Had to enable 'sync_all_file_types' to get .log files to copy over in pymakr
 MAIN_FILE_MODE = "a"       # Should be either a or ab append mode
-initial_open_mode = "a"    # Open with 'w' to start a new log file. Can change to 'a' to keep older logs.
+initial_open_mode = "w"    # Open with 'w' to start a new log file. Can change to 'a' to keep older logs.
 if MAIN_FILE_LOGGING:
     with open(MAIN_FILE_NAME, initial_open_mode) as f:
         f.write("cpu freq: {0} MHz\n".format(cpuf/10**6))

@@ -18,8 +18,8 @@ NOTSET   = 0
 Update boot.py MAIN_FILE_LOGGING flag if wanting all modules to log to same file 
 '''
 logger_log_level= 10
-logger_setup = 1  # 0 for basicConfig, 1 for custom logger with RotatingFileHandler (RFH)
-FileMode = 2 # If logger_setup ==1  then access to modes below
+logger_setup = 0  # 0 for basicConfig, 1 for custom logger with RotatingFileHandler (RFH)
+FileMode = 1 # If logger_setup ==1  then access to modes below
             #  FileMode == 1 # no log file
             #  FileMode == 2 # write to log file
 
@@ -154,16 +154,16 @@ setPWM(pwm)
 ftotal = 0
 for file in logfiles:
     filesize = uos.stat(file)[6]/1000
-    print('file:{0} size: {1:.1f}kb '.format(file, filesize))
+    logger_main.info('file:{0} size: {1:.1f}kb '.format(file, filesize))
     ftotal += filesize
-print('All logfiles: {0:.1f}kb'.format(ftotal))
+logger_main.info('Logfiles used in program: {0:.1f}kb'.format(ftotal))
 
 ftotal = 0
 for file in uos.listdir("/lib"):
     ftotal += uos.stat("/lib/" + file)[6]/1000
-print('All /lib files: {0:.1f}kb'.format(ftotal))
+logger_main.info('All /lib files: {0:.1f}kb'.format(ftotal))
 
 for file in uos.listdir():
     ftotal += uos.stat(file)[6]/1000
-print('TOTAL: {0:.1f}kb'.format(ftotal))
+logger_main.info('TOTAL: {0:.1f}kb'.format(ftotal))
     

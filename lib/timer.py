@@ -3,7 +3,7 @@ import ulogging
 import utime
 
 logger_log_level= 10
-logger_setup = 1  # 0 for basicConfig, 1 for custom logger with RotatingFileHandler (RFH)
+logger_setup = 0  # 0 for basicConfig, 1 for custom logger with RotatingFileHandler (RFH)
 FileMode = 2 # If logger_setup ==1 (RotatingFileHandler) then access to modes below
             #  FileMode == 1 # no log file
             #  FileMode == 2 # write to log file
