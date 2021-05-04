@@ -3,22 +3,9 @@ import ulogging, micropython
 from timer import Timer
 import utime, uos
 from machine import Pin, ADC, PWM
-import ntptime, machine
 import gc
 gc.collect()
 micropython.alloc_emergency_exception_buf(100)
-
-#ntptime.settime()
-#rtc = machine.RTC()
-#utc_shift = 3
-
-#tm = utime.localtime(utime.mktime(utime.localtime()) + utc_shift*3600)
-#tm = tm[0:3] + (0,) + tm[3:6] + (0,)
-#rtc.datetime(tm)
-
-#print(utime.localtime())
-#datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
-#datetime.utcnow().isoformat(sep=' ', timespec='milliseconds')
 
 '''
 ulogging from https://github.com/peterhinch
@@ -55,7 +42,7 @@ elif logger_setup == 1 and FileMode == 2 and MAIN_FILE_LOGGING:            # Usi
     logger_main = ulogging.getLogger(__name__, MAIN_FILE_NAME, MAIN_FILE_MODE, 0)  # over ride with MAIN_FILE settings in boot.py
     logger_main.setLevel(logger_log_level)
 
-logger_main.info(logger_main)
+logger_main.info('{0} {1}'.format(utime.localtime(), logger_main))
 
 @Timer
 def integer(n):
@@ -120,10 +107,10 @@ def setPWM(pin):
 
 n=10
 integer(n)
-logger_main.debug('ran {0} times'.format(n))
+logger_main.debug('{0} ran {1} times'.format(utime.localtime(), n))
 
 float(n)
-logger_main.debug('ran {0} times'.format(n))
+logger_main.debug('{0} ran {1} times'.format(utime.localtime(), n))
 
 pinlist = [5, 4, 2, 16]
 io_pin = [0]*len(pinlist)
