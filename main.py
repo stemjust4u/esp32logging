@@ -1,67 +1,69 @@
-'''
-https://github.com/peterhinch
-'''
+from boot import MAIN_FILE_LOGGING, MAIN_FILE_MODE, MAIN_FILE_NAME, logfiles # Not needed but helps with python intellisense (syntax highlighting)
 import ulogging, micropython
-import utime
+from timer import Timer
+import utime, uos
 from machine import Pin, ADC, PWM
 import gc
 gc.collect()
 micropython.alloc_emergency_exception_buf(100)
 
 '''
+ulogging from https://github.com/peterhinch
 CRITICAL = 50
 ERROR    = 40
 WARNING  = 30
 INFO     = 20
 DEBUG    = 10
 NOTSET   = 0
+Update boot.py MAIN_FILE_LOGGING flag if wanting all modules to log to same file 
 '''
-a = "test"
-logfile='esp32.log'
-ulogging.basicConfig(level=10)
+logger_log_level= 10
+logger_setup = 1  # 0 for basicConfig, 1 for custom logger with RotatingFileHandler (RFH)
+FileMode = 2 # If logger_setup ==1  then access to modes below
+            #  FileMode == 1 # no log file
+            #  FileMode == 2 # write to log file
 
-ulogging.info('root logger info: {0}'.format(a))
-ulogging.debug('root logger debugging')
+logfile = 'log' + __name__ + '.log'
+if logger_setup == 0: # Use basicConfig logger
+    ulogging.basicConfig(level=logger_log_level)              # Create Root logger
+    logger_main = ulogging.getLogger(__name__) # Set logger to root logging
+elif logger_setup == 1 and FileMode == 1:        # Using custom logger
+    logger_main = ulogging.getLogger(__name__)
+    logger_main.setLevel(logger_log_level)
+elif logger_setup == 1 and FileMode == 2 and not MAIN_FILE_LOGGING:        # Using custom logger with output to log file
+    logger_main = ulogging.getLogger(__name__, logfile, 'w', 2000)  # w/wb to over-write, a/ab to append, time in ms to keep file open
+    logger_main.setLevel(logger_log_level)
+    logfiles.append(logfile)
+elif logger_setup == 1 and FileMode == 2 and MAIN_FILE_LOGGING:            # Using custom logger with output to main log file
+    logger_main = ulogging.getLogger(__name__, MAIN_FILE_NAME, MAIN_FILE_MODE, 0)  # over ride with MAIN_FILE settings in boot.py
+    logger_main.setLevel(logger_log_level)
 
-logger_timed = ulogging.getLogger(__name__, 'log.py', 'w', 2000)  # w to over-write, a to append, time in ms to keep file open
-logger_timed.setLevel(10)
-logger_timed.info('logger info: {0}'.format(a))
-logger_timed.debug('logger debug')
+logger_main.info(logger_main)
 
-def timed_function(f, *args, **kwargs):
-    myname = str(f).split(' ')[1]
-    def new_func(*args, **kwargs):
-        t = utime.ticks_us()
-        result = f(*args, **kwargs)
-        delta = utime.ticks_diff(utime.ticks_us(), t)
-        logger_timed.debug('Function,{},time,{:6.3f},ms'.format(myname, delta/1000))
-        return result
-    return new_func
-
-@timed_function
+@Timer
 def integer(n):
     for i in range(n):
         x = 1 + 1
 
-@timed_function
+@Timer
 def float(n):
     for i in range(n):
         x = 1.5 + 1.5
 
-@timed_function
+@Timer
 def getpinvalue(pin):
     return pin.value()
 
-@timed_function
+@Timer
 def setpinvalue(pin, value):
     pin.value(value)
 
-@timed_function
+@Timer
 def set_4_pins(pins, value):
     for pin in pins:
         pin.value(value)
 
-@timed_function
+@Timer
 def get_4_pins_list(pins, outgoing):
     outgoing[0] = pins[0].value()
     outgoing[1] = pins[1].value()
@@ -69,13 +71,13 @@ def get_4_pins_list(pins, outgoing):
     outgoing[3] = pins[3].value()
     return outgoing
 
-@timed_function
+@Timer
 def get_4_pins_list_loop(pins, outgoing):
     for i, pin in enumerate(pins):
         outgoing[i] = pin.value()
     return outgoing
 
-@timed_function
+@Timer
 def get_4_pins_dict(pins, outgoing):
     outgoing['0'] = pins[0].value()
     outgoing['1'] = pins[1].value()
@@ -83,11 +85,11 @@ def get_4_pins_dict(pins, outgoing):
     outgoing['3'] = pins[3].value()
     return outgoing
 
-@timed_function
+@Timer
 def getADC(pin):
     return pin.read()
 
-@timed_function
+@Timer
 def getADC_4pins(pins, outgoing):
     outgoing[0] = pins[0].read()
     outgoing[1] = pins[1].read()
@@ -95,16 +97,16 @@ def getADC_4pins(pins, outgoing):
     outgoing[3] = pins[3].read()
     return outgoing
 
-@timed_function
+@Timer
 def setPWM(pin):
     pin.duty(75)  
 
 n=10
 integer(n)
-ulogging.debug('ran {0} times'.format(n))
+logger_main.debug('ran {0} times'.format(n))
 
 float(n)
-ulogging.debug('ran {0} times'.format(n))
+logger_main.debug('ran {0} times'.format(n))
 
 pinlist = [5, 4, 2, 16]
 io_pin = [0]*len(pinlist)
@@ -121,17 +123,17 @@ pin = 23
 pwm = PWM(Pin(pin), 50)
 
 onoff = getpinvalue(io_pin[2])
-ulogging.debug(onoff)
+logger_main.debug(onoff)
 setpinvalue(io_pin[2], 1)
 utime.sleep_ms(1000)
 setpinvalue(io_pin[2], 0)
 
 outgoing = [0]*len(pinlist)
 data = get_4_pins_list(io_pin, outgoing)
-ulogging.debug(data)
+logger_main.debug(data)
 
 data = get_4_pins_list_loop(io_pin, outgoing)
-ulogging.debug(data)
+logger_main.debug(data)
 
 adcpins = [32, 33, 34, 35]
 adc_pin = [0]*len(adcpins)
@@ -139,14 +141,29 @@ for i, pin in enumerate(adcpins):
     adc_pin[i] = ADC(Pin(pin))
     adc_pin[i].atten(ADC.ATTN_11DB)
 adcdata = getADC_4pins(adc_pin, outgoing)
-ulogging.debug(adcdata)
+logger_main.debug(adcdata)
 
 outgoing = {}
 data = get_4_pins_dict(io_pin, outgoing)
-ulogging.debug(data)
+logger_main.debug(data)
 
 adcvalue = getADC(adc)
 
-
-
 setPWM(pwm)
+
+ftotal = 0
+for file in logfiles:
+    filesize = uos.stat(file)[6]/1000
+    print('file:{0} size: {1:.1f}kb '.format(file, filesize))
+    ftotal += filesize
+print('All logfiles: {0:.1f}kb'.format(ftotal))
+
+ftotal = 0
+for file in uos.listdir("/lib"):
+    ftotal += uos.stat("/lib/" + file)[6]/1000
+print('All /lib files: {0:.1f}kb'.format(ftotal))
+
+for file in uos.listdir():
+    ftotal += uos.stat(file)[6]/1000
+print('TOTAL: {0:.1f}kb'.format(ftotal))
+    

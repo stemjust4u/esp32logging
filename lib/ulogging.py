@@ -1,3 +1,4 @@
+from boot import MAIN_FILE_LOGGING, MAIN_FILE_MODE, MAIN_FILE_NAME, logfiles
 import sys, uos
 from machine import Timer
 
@@ -22,13 +23,19 @@ class Logger:
 
     level = NOTSET
 
-    def __init__(self, name, logfile, mode, filetime):
+    def __init__(self, name, logfile, fmode, filetime):
         self.name = name
         self.fileopen = False
-        if logfile is not None:
+        self.logfile = logfile
+        self.mode = fmode
+        if self.logfile is not None and MAIN_FILE_LOGGING: # If all modules writing to a single file use 'with' context manager
+            self.logfile = MAIN_FILE_NAME 
+            self.mode = MAIN_FILE_MODE
+            self.fileopen = True
+        elif self.logfile is not None:                     # If this is only module writing to file then leave file open and use timer to close based on 'filetime' setting
             timer = Timer(0)
             timer.init(period=filetime, mode=Timer.ONE_SHOT, callback=self._debug_closef_exit)
-            self.f = open(logfile, mode)
+            self.f = open(self.logfile, self.mode)
             self.fileopen = True
     def _level_str(self, level):
         l = _level_dict.get(level)
@@ -44,8 +51,15 @@ class Logger:
 
     def log(self, level, msg, *args):
         if level >= (self.level or _level):
-            if self.fileopen:
-                _stream.write("%s:%s:" % (self._level_str(level), self.name))
+            if self.fileopen and MAIN_FILE_LOGGING:
+                with open(self.logfile, self.mode) as self.f:   # If multiple modules writing to file then open/close file safely
+                    self.f.write("%s,%s," % (self._level_str(level), self.name))
+                    if not args:
+                        self.f.write("{0}\n".format(msg))
+                    else:
+                        self.f.write(msg % args, file=_stream)
+            elif self.fileopen:                                # If single module writing to file then leave file open for faster writes
+                self.f.write("%s:%s:" % (self._level_str(level), self.name))
                 if not args:
                     self.f.write("{0}\n".format(msg))
                 else:
@@ -86,11 +100,12 @@ class Logger:
 _level = INFO
 _loggers = {}
 
-def getLogger(name, file=None, mode='bw', filetime=2000):
+def getLogger(name, file=None, mode='wb', filetime=2000):
     if name in _loggers:
         return _loggers[name]
     l = Logger(name, file, mode, filetime)
     _loggers[name] = l
+    #print('name:{0} dict:{1}'.format(name, _loggers))
     return l
 
 def info(msg, *args):
