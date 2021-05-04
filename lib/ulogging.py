@@ -23,16 +23,23 @@ class Logger:
 
     level = NOTSET
 
-    def __init__(self, name, logfile, fmode, filetime):
+    def __init__(self, name, logfile, fmode, autoclose, filetime):
         self.name = name
         self.fileopen = False
         self.logfile = logfile
         self.mode = fmode
+        self.autoclose = autoclose
         if self.logfile is not None and MAIN_FILE_LOGGING: # If all modules writing to a single file use 'with' context manager
             self.logfile = MAIN_FILE_NAME 
             self.mode = MAIN_FILE_MODE
             self.fileopen = True
-        elif self.logfile is not None:                     # If this is only module writing to file then leave file open and use timer to close based on 'filetime' setting
+            self.autoclose = True   # Must use autoclose ("with" file) method with MAIN FILE LOGGING
+        elif self.logfile is not None and autoclose:       # Open/close safely using 'with' context manager
+            with open(self.logfile, self.mode) as f:
+                f.write("Initialize file: {0} Initial mode was: {1}\n".format(self.logfile, self.mode))
+            self.mode = 'a'      # Will append remaining log results
+            self.fileopen = True
+        elif self.logfile is not None and not autoclose:   # If this is only module writing to file then leave file open and use timer to close based on 'filetime' setting
             timer = Timer(0)
             timer.init(period=filetime, mode=Timer.ONE_SHOT, callback=self._debug_closef_exit)
             self.f = open(self.logfile, self.mode)
@@ -51,19 +58,19 @@ class Logger:
 
     def log(self, level, msg, *args):
         if level >= (self.level or _level):
-            if self.fileopen and MAIN_FILE_LOGGING:
+            if self.fileopen and self.autoclose:
                 with open(self.logfile, self.mode) as self.f:   # If multiple modules writing to file then open/close file safely
                     self.f.write("%s,%s," % (self._level_str(level), self.name))
                     if not args:
                         self.f.write("{0}\n".format(msg))
                     else:
-                        self.f.write(msg % args, file=_stream)
-            elif self.fileopen:                                # If single module writing to file then leave file open for faster writes
+                        self.f.write(msg % args)
+            elif self.fileopen and not self.autoclose:          # If single module writing to file then leave file open for faster writes. Doesn't work with multiple files
                 self.f.write("%s:%s:" % (self._level_str(level), self.name))
                 if not args:
                     self.f.write("{0}\n".format(msg))
                 else:
-                    self.f.write(msg % args, file=_stream)
+                    self.f.write(msg % args)
             else:
                 _stream.write("%s:%s:" % (self._level_str(level), self.name))
                 if not args:
@@ -100,10 +107,10 @@ class Logger:
 _level = INFO
 _loggers = {}
 
-def getLogger(name, file=None, mode='wb', filetime=2000):
+def getLogger(name, file=None, mode='wb', autoclose=True, filetime=2000):
     if name in _loggers:
         return _loggers[name]
-    l = Logger(name, file, mode, filetime)
+    l = Logger(name, file, mode, autoclose, filetime)
     _loggers[name] = l
     #print('name:{0} dict:{1}'.format(name, _loggers))
     return l

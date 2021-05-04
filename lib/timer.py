@@ -3,19 +3,19 @@ import ulogging
 import utime
 
 logger_log_level= 10
-logger_setup = 0  # 0 for basicConfig, 1 for custom logger with RotatingFileHandler (RFH)
+logger_setup = 1  # 0 for basicConfig, 1 for custom logger with RotatingFileHandler (RFH)
 FileMode = 2 # If logger_setup ==1 (RotatingFileHandler) then access to modes below
             #  FileMode == 1 # no log file
             #  FileMode == 2 # write to log file
-logfile = 'log' + __name__ + '.log'
+logfile = __name__ + '.log'
 if logger_setup == 0: # Use basicConfig logger
-    ulogging.basicConfig(level=logger_log_level) # Create Root logger
-    logger_timer = ulogging.getLogger(__name__)  # Set logger to root logging
+    ulogging.basicConfig(level=logger_log_level) # Change logger global settings
+    logger_timer = ulogging.getLogger(__name__) 
 elif logger_setup == 1 and FileMode == 1:         # Using custom logger
     logger_timer = ulogging.getLogger(__name__)
     logger_timer.setLevel(logger_log_level)
-elif logger_setup == 1 and FileMode == 2 and not MAIN_FILE_LOGGING:        # Using custom logger with output to log file
-    logger_timer = ulogging.getLogger(__name__, logfile, 'w', 2000)  # w/wb to over-write, a/ab to append, time in ms to keep file open
+elif logger_setup == 1 and FileMode == 2 and not MAIN_FILE_LOGGING:  # Using custom logger with output to log file
+    logger_timer = ulogging.getLogger(__name__, logfile, mode='w', autoclose=True, filetime=5000)  # w/wb to over-write, a/ab to append, autoclose (with method), file time in ms to keep file open
     logger_timer.setLevel(logger_log_level)
     logfiles.append(logfile)
 elif logger_setup == 1 and FileMode == 2 and MAIN_FILE_LOGGING:            # Using custom logger with output to main log file

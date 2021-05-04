@@ -3,9 +3,22 @@ import ulogging, micropython
 from timer import Timer
 import utime, uos
 from machine import Pin, ADC, PWM
+import ntptime, machine
 import gc
 gc.collect()
 micropython.alloc_emergency_exception_buf(100)
+
+#ntptime.settime()
+#rtc = machine.RTC()
+#utc_shift = 3
+
+#tm = utime.localtime(utime.mktime(utime.localtime()) + utc_shift*3600)
+#tm = tm[0:3] + (0,) + tm[3:6] + (0,)
+#rtc.datetime(tm)
+
+#print(utime.localtime())
+#datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+#datetime.utcnow().isoformat(sep=' ', timespec='milliseconds')
 
 '''
 ulogging from https://github.com/peterhinch
@@ -17,21 +30,25 @@ DEBUG    = 10
 NOTSET   = 0
 Update boot.py MAIN_FILE_LOGGING flag if wanting all modules to log to same file 
 '''
+
+# If wanting all modules to write to the same MAIN FILE then enable MAIN_FILE_LOGGING in boot.py
+# If wanting modules to each be able to write to individual files then make sure autoclose=True (safe with file open/close)
+# If wanting a single module to quickly write to a log file then only enable one module and set autoclose=False
 logger_log_level= 10
-logger_setup = 0  # 0 for basicConfig, 1 for custom logger with RotatingFileHandler (RFH)
-FileMode = 1 # If logger_setup ==1  then access to modes below
+logger_setup = 1  # 0 for basicConfig, 1 for custom logger with RotatingFileHandler (RFH)
+FileMode = 2 # If logger_setup ==1  then access to modes below
             #  FileMode == 1 # no log file
             #  FileMode == 2 # write to log file
 
-logfile = 'log' + __name__ + '.log'
+logfile = __name__ + '.log'
 if logger_setup == 0: # Use basicConfig logger
-    ulogging.basicConfig(level=logger_log_level)              # Create Root logger
-    logger_main = ulogging.getLogger(__name__) # Set logger to root logging
+    ulogging.basicConfig(level=logger_log_level) # Change logger global settings
+    logger_main = ulogging.getLogger(__name__)
 elif logger_setup == 1 and FileMode == 1:        # Using custom logger
     logger_main = ulogging.getLogger(__name__)
     logger_main.setLevel(logger_log_level)
-elif logger_setup == 1 and FileMode == 2 and not MAIN_FILE_LOGGING:        # Using custom logger with output to log file
-    logger_main = ulogging.getLogger(__name__, logfile, 'w', 2000)  # w/wb to over-write, a/ab to append, time in ms to keep file open
+elif logger_setup == 1 and FileMode == 2 and not MAIN_FILE_LOGGING: # Using custom logger with output to log file
+    logger_main = ulogging.getLogger(__name__, logfile, mode='w', autoclose=True, filetime=5000)  # w/wb to over-write, a/ab to append, autoclose (with method), file time in ms to keep file open
     logger_main.setLevel(logger_log_level)
     logfiles.append(logfile)
 elif logger_setup == 1 and FileMode == 2 and MAIN_FILE_LOGGING:            # Using custom logger with output to main log file
@@ -151,19 +168,25 @@ adcvalue = getADC(adc)
 
 setPWM(pwm)
 
+print('Log file clean up')
 ftotal = 0
 for file in logfiles:
     filesize = uos.stat(file)[6]/1000
-    logger_main.info('file:{0} size: {1:.1f}kb '.format(file, filesize))
+    print('file:{0} size: {1:.1f}kb '.format(file, filesize))
     ftotal += filesize
-logger_main.info('Logfiles used in program: {0:.1f}kb'.format(ftotal))
+    with open(file, 'r') as f:
+        print('{0} line 1: {1}'.format(file, f.readline().rstrip("\n")))
+        print('           line 2: {0}'.format(f.readline().rstrip("\n")))
+        print('           line 3: {0}'.format(f.readline().rstrip("\n")))
+        print('Closed file: {0}'.format(file))
+print('Logfiles used in program: {0:.1f}kb'.format(ftotal))
 
 ftotal = 0
 for file in uos.listdir("/lib"):
     ftotal += uos.stat("/lib/" + file)[6]/1000
-logger_main.info('All /lib files: {0:.1f}kb'.format(ftotal))
+print('All /lib files: {0:.1f}kb'.format(ftotal))
 
 for file in uos.listdir():
     ftotal += uos.stat(file)[6]/1000
-logger_main.info('TOTAL: {0:.1f}kb'.format(ftotal))
+print('TOTAL: {0:.1f}kb'.format(ftotal))
     
